@@ -13,7 +13,7 @@ const lobby=()=>{const l=[...P.values()].filter(p=>p.a).map(p=>({id:p.id,n:p.a.n
 function start(h,g,ar){const m={ar,ps:[h,g],hp:[HP,HP],am:[7,7],last:[0,0],rl:[0,0],dt:[0,0],pos:[{},{}],over:0,dead:[0,0]};h.m=g.m=m;h.i=0;g.i=1;h.inv=g.inv=null;
  [h,g].forEach(p=>tx(p,{t:'go',ar,side:p.i,opp:m.ps[1-p.i].a.n,skin:p.a.eq,os:m.ps[1-p.i].a.eq}));sync(m);lobby()}
 function sync(m,ev){m.ps.forEach((p,i)=>tx(p,{t:'s',hp:[m.hp[i],m.hp[1-i]],sc:[m.dt[1-i],m.dt[i]],am:m.am[i],ev:ev===undefined?null:(ev===i?'me':'opp')}))}
-function end(m,w){if(m.over)return;m.over=1;m.ps.forEach((p,i)=>{const a=p.a,win=i===w;win?a.w++:a.l++;a.k+=m.dt[1-i];a.d+=m.dt[i];a.xp+=(win?30:10)+5*m.dt[1-i];const gc=ADM.includes(a.n.toLowerCase())?0:(win?60:20)+10*m.dt[1-i];a.c+=gc;p.m=null;tx(p,{t:'end',win,sc:[m.dt[1-i],m.dt[i]],a:pub(a),g:gc})});save();lobby()}
+function end(m,w){if(m.over)return;m.over=1;m.ps.forEach((p,i)=>{const a=p.a,win=i===w;win?a.w++:a.l++;a.k+=m.dt[1-i];a.d+=m.dt[i];a.xp+=(win?30:10)+5*m.dt[1-i];const gc=0;a.c+=gc;p.m=null;tx(p,{t:'end',win,sc:[m.dt[1-i],m.dt[i]],a:pub(a),g:gc})});save();lobby()}
 wss.on('connection',ws=>{ws.al=1;ws.on('pong',()=>ws.al=1);const p={ws,id:nid++,a:null,m:null,inv:null,t:0};P.set(p.id,p);
  ws.on('message',d=>{let m;try{m=JSON.parse(d)}catch{return}if(typeof m!=='object'||!m)return;
   if(m.t==='auth'||m.t==='acode'||m.t==='asel'){if(Date.now()-p.t<500)return;p.t=Date.now();
@@ -30,11 +30,11 @@ wss.on('connection',ws=>{ws.al=1;ws.on('pong',()=>ws.al=1);const p={ws,id:nid++,
   else if(m.t==='acc'){const o=P.get(m.to);if(o&&!o.m&&!p.m&&p.inv&&p.inv.from===o.id)start(o,p,p.inv.ar)}
   else if(m.t==='dec'){const o=P.get(m.to);if(o)tx(o,{t:'dec'});p.inv=null}
   else if(m.t==='ann'&&ADM.includes(p.a.n.toLowerCase()))P.forEach(o=>tx(o,{t:'ann',from:p.a.n,x:String(m.x).slice(0,80)}));
-  else if(m.t==='req'){if(Date.now()-(p.rq||0)<60000)return tx(p,{t:'note',x:'Poczekaj chwilę przed kolejną prośbą'});p.rq=Date.now();const ads=[...P.values()].filter(o=>o.a&&ADM.includes(o.a.n.toLowerCase()));if(!REQ.some(r=>r.n===p.a.n))REQ.push({id:p.id,n:p.a.n});ads.forEach(o=>tx(o,{t:'rq',id:p.id,n:p.a.n}));tx(p,{t:'note',x:ads.length?'Wysłano prośbę do admina':'Prośba zapisana — admin zobaczy ją po wejściu'})}
-  else if(m.t==='give'&&ADM.includes(p.a.n.toLowerCase())){const t=acc[String(m.n).toLowerCase()],v=Math.max(1,Math.min(1e6,m.v|0));if(!t)return tx(p,{t:'note',x:'Nie ma takiego gracza'});t.c=(t.c||0)+v;save();const q=REQ.findIndex(r=>r.n===t.n);if(q>=0)REQ.splice(q,1);const o=[...P.values()].find(o=>o.a===t);if(o)tx(o,{t:'acc',a:pub(t),x:'Admin '+p.a.n+' dał Ci '+v+' 🪙'});tx(p,{t:'note',x:'Dodano '+v+' 🪙 dla '+t.n});P.forEach(z=>z.a&&ADM.includes(z.a.n.toLowerCase())&&tx(z,{t:'rql',l:REQ}))}
+  else if(m.t==='req'&&false){if(Date.now()-(p.rq||0)<60000)return tx(p,{t:'note',x:'Poczekaj chwilę przed kolejną prośbą'});p.rq=Date.now();const ads=[...P.values()].filter(o=>o.a&&ADM.includes(o.a.n.toLowerCase()));if(!REQ.some(r=>r.n===p.a.n))REQ.push({id:p.id,n:p.a.n});ads.forEach(o=>tx(o,{t:'rq',id:p.id,n:p.a.n}));tx(p,{t:'note',x:ads.length?'Wysłano prośbę do admina':'Prośba zapisana — admin zobaczy ją po wejściu'})}
+  else if(m.t==='give'&&false&&ADM.includes(p.a.n.toLowerCase())){const t=acc[String(m.n).toLowerCase()],v=Math.max(1,Math.min(1e6,m.v|0));if(!t)return tx(p,{t:'note',x:'Nie ma takiego gracza'});t.c=(t.c||0)+v;save();const q=REQ.findIndex(r=>r.n===t.n);if(q>=0)REQ.splice(q,1);const o=[...P.values()].find(o=>o.a===t);if(o)tx(o,{t:'acc',a:pub(t),x:'Admin '+p.a.n+' dał Ci '+v+' 🪙'});tx(p,{t:'note',x:'Dodano '+v+' 🪙 dla '+t.n});P.forEach(z=>z.a&&ADM.includes(z.a.n.toLowerCase())&&tx(z,{t:'rql',l:REQ}))}
   else if(m.t==='forget'){p.a.tks=(p.a.tks||[]).filter(h=>h!==hsh(String(m.tk)));save()}
-  else if(m.t==='crate'&&!p.m&&p.a.c>=100){p.a.c-=100;let r=Math.random()*100,s=1;const W=[47,28,15,8,2];for(let i=0;i<5;i++){if(r<W[i]){s=i+1;break}r-=W[i]}const dup=p.a.inv.includes(s);if(dup)p.a.c+=40;else p.a.inv.push(s);save();tx(p,{t:'crate',s,dup,a:pub(p.a)})}
-  else if(m.t==='eq'&&!p.m&&p.a.inv.includes(m.s|0)){p.a.eq=m.s|0;save();tx(p,{t:'acc',a:pub(p.a)})}
+  else if(m.t==='crate'&&false){p.a.c-=100;let r=Math.random()*100,s=1;const W=[47,28,15,8,2];for(let i=0;i<5;i++){if(r<W[i]){s=i+1;break}r-=W[i]}const dup=p.a.inv.includes(s);if(dup)p.a.c+=40;else p.a.inv.push(s);save();tx(p,{t:'crate',s,dup,a:pub(p.a)})}
+  else if(m.t==='eq'&&false&&p.a.inv.includes(m.s|0)){p.a.eq=m.s|0;save();tx(p,{t:'acc',a:pub(p.a)})}
   else if(m0&&!m0.over){const i=p.i,j=1-i,o=m0.ps[j];
    if(m.t==='p'){m0.pos[i]=m.v;tx(o,{t:'p',v:m.v})}
    else if(m.t==='f'&&m0.hp[i]>0&&m0.hp[j]>=0&&!m0.dead[i]){const n=Date.now();if(n-m0.last[i]<340||m0.rl[i]||m0.am[i]<=0)return;m0.last[i]=n;m0.am[i]--;tx(o,{t:'f',o:m.o,d:m.d,e:m.e});
