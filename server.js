@@ -4,7 +4,7 @@ let acc={};try{acc=JSON.parse(fs.readFileSync(F))}catch{}
 const save=()=>fs.writeFile(F,JSON.stringify(acc),()=>{});
 const hs=(p,s)=>cr.scryptSync(p,s,32).toString('hex');
 const pub=a=>({n:a.n,w:a.w,l:a.l,k:a.k,d:a.d,xp:a.xp});
-const srv=http.createServer((q,r)=>r.end('TENHP ok')),wss=new WebSocketServer({server:srv});
+const srv=http.createServer((q,r)=>{fs.readFile(__dirname+'/index.html',(e,d)=>{if(e)return r.end('TENHP ok');r.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});r.end(d)})}),wss=new WebSocketServer({server:srv});
 const P=new Map();let nid=1;
 const tx=(p,o)=>{if(p.ws.readyState===1)p.ws.send(JSON.stringify(o))};
 const lobby=()=>{const l=[...P.values()].filter(p=>p.a).map(p=>({id:p.id,n:p.a.n,lv:Math.floor(p.a.xp/100)+1,adm:ADM.includes(p.a.n.toLowerCase())?1:0,st:p.m?'game':'lobby'}));P.forEach(p=>p.a&&tx(p,{t:'lob',l}))};

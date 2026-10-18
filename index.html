@@ -48,7 +48,7 @@ button{cursor:pointer;font-weight:700}button:active{transform:scale(.97)}button.
 <div class="scr" id="inv"><div class="card"><div id="it" style="text-align:center;font-size:18px"></div><button class="p" id="ia">Akceptuj</button><button class="d" id="id">Odrzuć</button></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-const SERVER='wss://TWOJ-SERWER.onrender.com';
+const SERVER=/^https?:$/.test(location.protocol)&&!/itch|hwcdn/.test(location.host)?(location.protocol==='https:'?'wss://':'ws://')+location.host:'wss://TWOJ-SERWER.up.railway.app';
 const $=s=>$d.querySelector(s),$d=document;
 const LS=(k,v)=>{try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}};
 const cfg=Object.assign({mode:'dyn',style:'cross',size:14,color:'#ffd23d',sens:5},LS('cfg')||{});
