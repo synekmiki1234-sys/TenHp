@@ -28,7 +28,7 @@ wss.on('connection',ws=>{ws.al=1;ws.on('pong',()=>ws.al=1);const p={ws,id:nid++,
    if(m.m==='reg'){if(acc[k])return tx(p,{t:'err',m:'Nazwa zajęta'});if(ADM.includes(k)&&(!KEY||m.k!==KEY))return tx(p,{t:'err',m:'Ta nazwa wymaga klucza admina',key:1});const s=cr.randomBytes(8).toString('hex');acc[k]={n,s,h:hs(pw,s),w:0,l:0,k:0,d:0,xp:0,c:100,inv:[0],eq:0};save()}
    const a=acc[k];if(!a||a.h!==hs(pw,a.s))return tx(p,{t:'err',m:'Zła nazwa lub hasło'});return fin(a,m.r)}
   if(!p.a)return;const m0=p.m;
-  if(m.t==='inv'){const o=P.get(m.to);if(o&&o!==p&&o.a&&!o.m&&!p.m){o.inv={from:p.id,ar:m.ar|0};tx(o,{t:'inv',fid:p.id,from:p.a.n,ar:m.ar|0})}}
+  if(m.t==='inv'){const o=P.get(m.to);if(o&&o!==p&&o.a&&!o.m&&!p.m){o.inv={from:p.id,ar:(m.ar>=0&&m.ar<6?m.ar|0:0)};tx(o,{t:'inv',fid:p.id,from:p.a.n,ar:(m.ar>=0&&m.ar<6?m.ar|0:0)})}}
   else if(m.t==='acc'){const o=P.get(m.to);if(o&&!o.m&&!p.m&&p.inv&&p.inv.from===o.id)start(o,p,p.inv.ar)}
   else if(m.t==='dec'){const o=P.get(m.to);if(o)tx(o,{t:'dec'});p.inv=null}
   else if(m.t==='ann'&&ADM.includes(p.a.n.toLowerCase()))P.forEach(o=>tx(o,{t:'ann',from:p.a.n,x:String(m.x).slice(0,80)}));
