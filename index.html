@@ -45,7 +45,7 @@ button.big{font-size:21px;padding:17px;letter-spacing:3px;box-shadow:0 0 22px #f
 <div class="scr on" id="s-auth"><h1>TENHP 3D</h1><div class="sub">Deagle 1v1 · /tenhp · 10 HP</div>
 <div class="card"><div class="row tabs"><button id="tl" class="a">Logowanie</button><button id="tr">Nowe konto</button></div>
 <input id="un" placeholder="Nazwa gracza" maxlength="16" autocomplete="username"><input id="pw" type="password" placeholder="Hasło"><input id="pw2" type="password" placeholder="Powtórz hasło" style="display:none">
-<label style="font-size:13px"><input type="checkbox" id="rm" checked> Zapamiętaj to urządzenie</label><div class="row"><input id="ak" placeholder="Kod admina" style="font-size:12px"><button id="abc" style="flex:0 0 auto">Wejdź</button></div><input id="sv" placeholder="Adres serwera (wss://…)" style="font-size:12px"><div class="err" id="ae"></div><button class="p" id="ab">ZALOGUJ</button><button id="bot2">🤖 Trening z botem (bez konta)</button></div></div>
+<label style="font-size:13px"><input type="checkbox" id="rm" checked> Zapamiętaj to urządzenie</label><div class="row"><input id="ak" placeholder="Kod admina" style="font-size:12px"><button id="abc" style="flex:0 0 auto">Wejdź</button></div><input id="sv" placeholder="Adres serwera, np. twoja-gra.onrender.com" style="font-size:12px"><div class="err" id="ae"></div><button class="p" id="ab">ZALOGUJ</button><button id="bot2">🤖 Trening z botem (bez konta)</button></div></div>
 <div class="scr" id="s-menu"><h1>TENHP 3D</h1><div class="sub">Deagle 1v1 · /tenhp · 10 HP</div>
 <div class="card pc"><div class="av" id="av"></div><div style="flex:1"><div id="who" style="font-size:19px;font-weight:800"></div><div class="xp"><i id="xpb"></i></div><small id="xpt" style="color:var(--mu)"></small></div></div>
 <div class="card"><div class="st" id="stats"></div><button class="p big" id="b-lobby">▶ GRAJ 1v1</button><button id="b-bot">🤖 Trening z botem</button>
@@ -65,6 +65,7 @@ button.big{font-size:21px;padding:17px;letter-spacing:3px;box-shadow:0 0 22px #f
 <div class="scr" id="inv"><div class="card"><div id="it" style="text-align:center;font-size:18px"></div><button class="p" id="ia">Akceptuj</button><button class="d" id="id">Odrzuć</button></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
 <script>
 const SERVER=/^https?:$/.test(location.protocol)&&!/itch|hwcdn/.test(location.host)?(location.protocol==='https:'?'wss://':'ws://')+location.host:'wss://TWOJ-SERWER.onrender.com';
 const $=s=>$d.querySelector(s),$d=document;
@@ -88,13 +89,16 @@ const send=o=>{if(BOT)return bsend(o);ws&&ws.readyState===1&&ws.send(JSON.string
 function scr(id){$d.querySelectorAll('.scr').forEach(e=>e.classList.toggle('on',e.id==='s-'+id||e.id===id))}
 function banner(t,c){const b=$('#bn');b.textContent=t;b.style.color=c||'#fff';b.classList.remove('s');void b.offsetWidth;b.classList.add('s')}
 /* ----- sieć ----- */
-function conn(cb){if(ws&&ws.readyState===1)return cb();$('#ae').textContent='Łączenie…';try{ws=new WebSocket(url)}catch(e){return $('#ae').textContent='Zły adres serwera'}
- ws.onopen=()=>{$('#ae').textContent='';cb()};ws.onmessage=e=>net(JSON.parse(e.data));
- ws.onerror=()=>{$('#ae').textContent='Nie można połączyć z serwerem'};ws.onclose=()=>{if(me){me=null;if(inGame)exitGame();scr('auth');$('#ae').textContent='Rozłączono z serwerem'}}}
-$('#sv').value=url;$('#sv').onchange=e=>{url=e.target.value.trim();LS('srv',url);try{ws&&ws.close()}catch(e){}ws=null};
+function normUrl(u){u=(u||'').trim();if(!u)return u;u=u.replace(/^https:\/\//i,'wss://').replace(/^http:\/\//i,'ws://');if(!/^wss?:\/\//i.test(u))u='wss://'+u;return u.replace(/\/+$/,'')}
+function conn(cb,n){n=n||0;if(ws&&ws.readyState===1)return cb();const e=$('#ae');
+ if(!url||/TWOJ-SERWER/i.test(url)){e.textContent='Wpisz adres swojego serwera w polu poniżej (np. nazwa.onrender.com)';$('#sv').focus();return}
+ e.textContent=n?'Serwer się budzi… (próba '+n+'/15)':'Łączenie…';let w;try{w=new WebSocket(normUrl(url))}catch(x){e.textContent='Zły adres serwera';return}
+ ws=w;let ok=0;w.onopen=()=>{ok=1;e.textContent='';cb()};w.onmessage=ev=>net(JSON.parse(ev.data));w.onerror=()=>{};
+ w.onclose=()=>{if(!ok){if(ws===w)ws=null;if(n<15)setTimeout(()=>conn(cb,n+1),3000);else e.textContent='Nie można połączyć z serwerem — sprawdź adres'}else if(me&&!guest){me=null;if(inGame)exitGame();scr('auth');e.textContent='Rozłączono z serwerem'}}}
+$('#sv').value=/TWOJ-SERWER/i.test(url)?'':url;$('#sv').onchange=e=>{url=normUrl(e.target.value);LS('srv',url);try{ws&&ws.close()}catch(x){}ws=null};
 $('#tl').onclick=()=>tab(false);$('#tr').onclick=()=>tab(true);
 function tab(r){reg=r;$('#tl').classList.toggle('a',!r);$('#tr').classList.toggle('a',r);$('#pw2').style.display=r?'':'none';$('#ab').textContent=r?'UTWÓRZ KONTO':'ZALOGUJ';$('#ae').textContent=''}
-let akey;$('#ab').onclick=()=>{const n=$('#un').value.trim(),p=$('#pw').value;if(reg&&p!==$('#pw2').value)return $('#ae').textContent='Hasła się różnią';conn(()=>send({t:'auth',m:reg?'reg':'login',n,p,k:akey,r:$('#rm').checked?1:0}))};
+let akey;$('#ab').onclick=()=>{if($('#sv').value.trim()){url=normUrl($('#sv').value);LS('srv',url)};const n=$('#un').value.trim(),p=$('#pw').value;if(reg&&p!==$('#pw2').value)return $('#ae').textContent='Hasła się różnią';conn(()=>send({t:'auth',m:reg?'reg':'login',n,p,k:akey,r:$('#rm').checked?1:0}))};
 $('#b-out').onclick=()=>{const d=LS('dev');if(d)send({t:'forget',tk:d.tk});LS('dev',null);me=null;try{ws.close()}catch(e){}ws=null;scr('auth')};
 function net(m){switch(m.t){
  case'err':$('#ae').textContent=m.m;if(m.tok)LS('dev',null);if(m.key){akey=prompt('Klucz admina:')||'';}break;
@@ -312,7 +316,7 @@ function buildMap(A){const k=A.k,[sx,sz]=A.s,C=[[0x1e2a5e,0xff9a5a],[0x5b2a9a,0x
  if(k===3){mounts(0x9a5a3a,14,115);for(let i=0;i<8;i++)world.add(cactus(Math.sin(i*2.1)*(sx-4),Math.cos(i*3.3)*(sz-4)))}
  if(k===4){const sea=new THREE.Mesh(new THREE.PlaneGeometry(600,600),new THREE.MeshStandardMaterial({color:0x0e2a4a,roughness:.1,metalness:.3}));sea.rotation.x=-Math.PI/2;sea.position.y=-.1;world.add(sea);[[-sx*.6,-sz+2,0xffb060],[sx*.6,sz-2,0x60c8ff],[0,0,0xff6a9a]].forEach(([x,z,c])=>{const l=new THREE.PointLight(c,1.4,30);l.position.set(x,5,z);world.add(l);world.add(bx(.2,5,.2,0x333333,x,2.5,z))})}
  if(k===5){mounts(0xdfe6ee,14,115);for(let i=0;i<14;i++)world.add(pine(Math.sin(i*1.9)*(sx+6),Math.cos(i*2.7)*(sz+6),1.3))}}
-function anim(g,sp,cr,air,ak,pt,dt,up){const k=Math.min(1,dt*14);g.ph=(g.ph||0)+sp*dt*2.3;const w=Math.min(1,sp/3),a=Math.sin(g.ph)*.85*w,ps=cr?.55:.95-Math.abs(Math.sin(g.ph))*.03*w;g.pel.position.y+=(ps-g.pel.position.y)*k;
+function anim(g,sp,cr,air,ak,pt,dt,up){if(g.sol)return animSol(g,sp,cr,air,ak,pt,dt,up);const k=Math.min(1,dt*14);g.ph=(g.ph||0)+sp*dt*2.3;const w=Math.min(1,sp/3),a=Math.sin(g.ph)*.85*w,ps=cr?.55:.95-Math.abs(Math.sin(g.ph))*.03*w;g.pel.position.y+=(ps-g.pel.position.y)*k;
  g.legs.forEach(([h,kn],i)=>{const s=i?1:-1;let hx=a*s,kx=-Math.max(0,-Math.cos(g.ph)*s)*w;if(cr){hx=1.15+a*s*.25;kx=-1.9}if(air){hx=i?.7:.2;kx=-1.2}h.rotation.x+=(hx-h.rotation.x)*k;kn.rotation.x+=(kx-kn.rotation.x)*k});
  g.tor.rotation.x+=((cr?.3:0)-g.tor.rotation.x)*k;const ax=up?Math.PI:.3+ak*(Math.PI/2-.3)+pt*ak,aim=ak>.15||up;
  g.arms[1].rotation.x+=((aim?ax:.3-a*.6)-g.arms[1].rotation.x)*k;g.arms[0].rotation.x+=((aim?ax:.3+a*.6)-g.arms[0].rotation.x)*k;g.arms[0].rotation.z=aim&&!up?-.2:0;
@@ -322,7 +326,7 @@ function mkGun(si){const s=SK[si||0],g=new THREE.Group();let mat;
  if(GLB){const m=GLB.clone();m.traverse(o=>{if(o.isMesh){o.material=o.material.clone();mat=o.material;mat.metalness=.4;mat.metalnessMap=null;mat.roughness=1;mat.envMapIntensity=0;o.castShadow=true;if(si)o.material.color.set(s.c)}});g.add(m)}
  else{mat=new THREE.MeshStandardMaterial({color:s.c,metalness:.85,roughness:.3});const o=new THREE.Mesh(new THREE.BoxGeometry(.06,.1,.36),mat);o.position.set(0,-.03,-.1);g.add(o)}
  const f=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),new THREE.MeshBasicMaterial({color:0xffd23d}));f.position.set(0,-.03,-.32);f.visible=false;g.add(f);g.fl=f;g.skm=mat;g.pro=si===5;return g}
-function mkChar(col,skin,hc){const g=new THREE.Group(),M=(c,r=.7,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m}),
+function mkCharOld(col,skin,hc){const g=new THREE.Group(),M=(c,r=.7,m=0)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m}),
  Cy=(a,b,h,mt,x,y,z,p,sz)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(a,b,h,12),mt);o.position.set(x,y,z);if(sz)o.scale.z=sz;o.castShadow=true;p.add(o);return o},
  Sp=(r,mt,x,y,z,p,sx,sy,sz)=>{const o=new THREE.Mesh(new THREE.SphereGeometry(r,14,10),mt);o.position.set(x,y,z);o.scale.set(sx||1,sy||1,sz||1);o.castShadow=true;p.add(o);return o},
  B=(w,h,d,m,x,y,z,p)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=true;p.add(o);return o},
@@ -334,6 +338,30 @@ function mkChar(col,skin,hc){const g=new THREE.Group(),M=(c,r=.7,m=0)=>new THREE
  g.legs=[-1,1].map(s=>{const h=new THREE.Group();h.position.set(s*.12,-.05,0);pel.add(h);Cy(.1,.08,.46,pn,0,-.23,0,h);const k=new THREE.Group();k.position.y=-.45;h.add(k);Sp(.085,pn,0,0,0,k);Cy(.075,.06,.44,pn,0,-.23,0,k);B(.15,.1,.3,bt,0,-.45,-.06,k);B(.155,.03,.31,M(0x888888,.9),0,-.5,-.06,k);return[h,k]});
  g.arms=[-1,1].map(s=>{const a=new THREE.Group();a.position.set(s*.3,.52,0);tor.add(a);Cy(.07,.06,.5,cl,0,-.25,0,a);Sp(.065,dk,0,-.54,0,a);return a});
  const gun=mkGun(skin);gun.rotation.x=-Math.PI/2;gun.position.set(0,-.58,-.1);g.arms[1].add(gun);g.fl=gun.fl;g.skm=gun.skm;g.pro=gun.pro;return g}
+let SOL=null;try{new THREE.GLTFLoader().load('soldier.glb',g=>{SOL=g.scene;SOL.traverse(o=>{if(o.isSkinnedMesh)o.frustumCulled=false})},undefined,()=>{})}catch(e){}
+const QX=a=>new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),a),V3=(x,y,z)=>new THREE.Vector3(x,y,z);
+function mkChar(col,skin,hc){return SOL&&THREE.SkeletonUtils?mkSoldier(col,skin):mkCharOld(col,skin,hc)}
+function mkSoldier(col,skin){const g=new THREE.Group(),m=THREE.SkeletonUtils.clone(SOL);g.rotation.order='YXZ';g.add(m);g.sol=1;m.updateMatrixWorld(true);
+ const bs=[];m.traverse(o=>{if(o.isBone)bs.push(o)});const f=re=>bs.find(b=>re.test(b.name));
+ const tint=col===0x3da8ff;m.traverse(o=>{if(o.isMesh){o.castShadow=true;if(tint&&/Kitel|Pants|Plate/.test(o.name)){o.material=o.material.clone();o.material.color.set(0x9fbfff)}}});
+ const wq=b=>b.parent.getWorldQuaternion(new THREE.Quaternion()),wp=b=>b.getWorldPosition(new THREE.Vector3());
+ const mk=re=>{const b=f(re);if(!b)return null;const Wp=wq(b);return{b,L:b.quaternion.clone(),Wp,Wi:Wp.clone().invert()}};
+ const B=g.bn={hip:mk(/_Hip_\d+$/),waist:mk(/_Waist_\d+$/),head:mk(/_Head_\d+$/),tl:mk(/_L_Thigh_\d+$/),tr:mk(/_R_Thigh_\d+$/),cl:mk(/_L_Calf_\d+$/),cr:mk(/_R_Calf_\d+$/),al:mk(/_L_Upperarm_\d+$/),ar:mk(/_R_Upperarm_\d+$/)};
+ const fa=f(/_L_Forearm_\d+$/),fb=f(/_R_Forearm_\d+$/);if(B.al&&fa)B.al.d0=wp(fa).sub(wp(B.al.b)).normalize();if(B.ar&&fb)B.ar.d0=wp(fb).sub(wp(B.ar.b)).normalize();
+ g.hand=f(/_R_Hand_\d+$/);
+ if(B.hip){const h=B.hip.b,w0=wp(h);B.hip.p0=h.position.clone();B.hip.pm=h.parent.worldToLocal(w0.clone().add(V3(0,-1,0))).sub(h.parent.worldToLocal(w0.clone()))}
+ const gun=mkGun(skin);gun.scale.setScalar(.8);g.add(gun);g.gun=gun;g.fl=gun.fl;g.skm=gun.skm;g.pro=gun.pro;return g}
+function setB(o,R){if(o)o.b.quaternion.copy(o.Wi).multiply(R).multiply(o.Wp).multiply(o.L)}
+function animSol(g,sp,cr,air,ak,pt,dt,up){const k=Math.min(1,dt*14),B=g.bn;g.ph=(g.ph||0)+sp*dt*2.3;const w=Math.min(1,sp/3),a=Math.sin(g.ph)*.85*w,ca=Math.cos(g.ph);
+ g.cs=(g.cs||0)+((cr?1:0)-(g.cs||0))*k;g.as=(g.as||0)+(((ak>.15||up)?1:0)-(g.as||0))*Math.min(1,dt*10);const cs=g.cs,as=g.as;g.lv=g.lv||[[0,0],[0,0]];
+ [0,1].forEach(i=>{const s=i?1:-1;let h=a*s,kn=-Math.max(0,-ca*s)*w;h+=(1.15+a*s*.25-h)*cs;kn+=(-1.9-kn)*cs;if(air){h=i?.7:.2;kn=-1.2}g.lv[i][0]+=(h-g.lv[i][0])*k;g.lv[i][1]+=(kn-g.lv[i][1])*k;setB(i?B.tr:B.tl,QX(g.lv[i][0]));setB(i?B.cr:B.cl,QX(g.lv[i][1]))});
+ if(B.hip)B.hip.b.position.copy(B.hip.p0).addScaledVector(B.hip.pm,cs*.32);if(B.waist)setB(B.waist,QX(-.3*cs));if(B.head)setB(B.head,QX(pt*.6*as));
+ const lean=QX(.3*cs),cp=Math.cos(pt),sn=Math.sin(pt),aimR=V3(-.1,sn,-cp).normalize(),aimL=V3(.45,sn,-cp).normalize(),idR=V3(.08,-Math.cos(.3-a*.5),-Math.sin(.3-a*.5)),idL=V3(-.08,-Math.cos(.3+a*.5),-Math.sin(.3+a*.5));
+ let tR=idR.clone().lerp(aimR,as).normalize(),tL=idL.clone().lerp(aimL,as).normalize();if(up){tR=V3(.1,1,0).normalize();tL=V3(-.1,1,0).normalize()}
+ [[B.ar,tR],[B.al,tL]].forEach(([o,t])=>{if(o&&o.d0)setB(o,lean.clone().multiply(new THREE.Quaternion().setFromUnitVectors(o.d0,t)))});
+ g.updateMatrixWorld(true);if(g.hand){const hp=g.hand.getWorldPosition(V3(0,0,0));g.worldToLocal(hp);const gd=V3(0,-.35,-.94).lerp(V3(0,sn,-cp),as).normalize();if(up)gd.set(0,.4,-.9).normalize();
+  g.gun.quaternion.setFromUnitVectors(V3(0,0,-1),gd);g.gun.position.copy(hp).sub(V3(0,-.1,.05).multiplyScalar(.8).applyQuaternion(g.gun.quaternion))}
+ if(g.pro)g.skm.color.setHSL((performance.now()/1000*.25)%1,.9,.55)}
 function confetti(){const n=250,p=new Float32Array(n*3),c=new Float32Array(n*3);for(let i=0;i<n;i++){p.set([(Math.random()-.5)*8,Math.random()*7,(Math.random()-.5)*8],i*3);new THREE.Color().setHSL(Math.random(),.9,.6).toArray(c,i*3)}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('color',new THREE.BufferAttribute(c,3));conf=new THREE.Points(g,new THREE.PointsMaterial({size:.14,vertexColors:true}));sc.add(conf)}
 /* ----- tło menu ----- */
 const bg=$('#bg'),bc=bg.getContext('2d');let bt=0;
