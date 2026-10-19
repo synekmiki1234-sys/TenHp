@@ -5,7 +5,9 @@ async function load(){try{if(UU){const r=await fetch(UU+'/get/tenhp',{headers:{A
 let stm=0;const save=()=>{clearTimeout(stm);stm=setTimeout(()=>{const s=JSON.stringify(acc);if(UU)fetch(UU+'/set/tenhp',{method:'POST',headers:{Authorization:'Bearer '+UT},body:s}).catch(()=>{});else fs.writeFile(F,s,()=>{})},800)};
 const hs=(p,s)=>cr.scryptSync(p,s,32).toString('hex');
 const REQ=[],hsh=s=>cr.createHash('sha256').update(s).digest('hex');
-const pub=a=>({n:a.n,w:a.w,l:a.l,k:a.k,d:a.d,xp:a.xp,c:a.c,inv:a.inv,eq:a.eq});
+const ACH=[['first',a=>a.k>=1,1],['w1',a=>a.w>=1,2],['w5',a=>a.w>=5,3],['flaw',a=>a.fl,4],['w25',a=>a.w>=25,5],['k50',a=>a.k>=50,0]];
+function ach(a){a.ach=a.ach||[];a.inv=a.inv||[0];const nw=[];ACH.forEach(([id,f,s])=>{if(!a.ach.includes(id)&&f(a)){a.ach.push(id);nw.push(id);if(s){if(!a.inv.includes(s))a.inv.push(s)}else a.xp+=100}});return nw}
+const pub=a=>({n:a.n,w:a.w,l:a.l,k:a.k,d:a.d,xp:a.xp,c:a.c,inv:a.inv,eq:a.eq,ach:a.ach||[]});
 const srv=http.createServer((q,r)=>{const f=q.url.startsWith('/deagle.glb')?['deagle.glb','model/gltf-binary']:['index.html','text/html; charset=utf-8'];fs.readFile(__dirname+'/'+f[0],(e,d)=>{if(e)return r.end('TENHP ok');r.writeHead(200,{'Content-Type':f[1]});r.end(d)})}),wss=new WebSocketServer({server:srv});
 const P=new Map();let nid=1;
 const tx=(p,o)=>{if(p.ws.readyState===1)p.ws.send(JSON.stringify(o))};
@@ -13,13 +15,13 @@ const lobby=()=>{const l=[...P.values()].filter(p=>p.a).map(p=>({id:p.id,n:p.a.n
 function start(h,g,ar){const m={ar,ps:[h,g],hp:[HP,HP],am:[7,7],last:[0,0],rl:[0,0],dt:[0,0],pos:[{},{}],over:0,dead:[0,0]};h.m=g.m=m;h.i=0;g.i=1;h.inv=g.inv=null;
  [h,g].forEach(p=>tx(p,{t:'go',ar,side:p.i,opp:m.ps[1-p.i].a.n,skin:p.a.eq,os:m.ps[1-p.i].a.eq}));sync(m);lobby()}
 function sync(m,ev){m.ps.forEach((p,i)=>tx(p,{t:'s',hp:[m.hp[i],m.hp[1-i]],sc:[m.dt[1-i],m.dt[i]],am:m.am[i],ev:ev===undefined?null:(ev===i?'me':'opp')}))}
-function end(m,w){if(m.over)return;m.over=1;m.ps.forEach((p,i)=>{const a=p.a,win=i===w;win?a.w++:a.l++;a.k+=m.dt[1-i];a.d+=m.dt[i];a.xp+=(win?30:10)+5*m.dt[1-i];const gc=0;a.c+=gc;p.m=null;tx(p,{t:'end',win,sc:[m.dt[1-i],m.dt[i]],a:pub(a),g:gc})});save();lobby()}
+function end(m,w){if(m.over)return;m.over=1;m.ps.forEach((p,i)=>{const a=p.a,win=i===w;win?a.w++:a.l++;a.k+=m.dt[1-i];a.d+=m.dt[i];a.xp+=(win?30:10)+5*m.dt[1-i];const gc=0;a.c+=gc;if(win&&m.dt[i]===0)a.fl=1;const nw=ach(a);p.m=null;tx(p,{t:'end',win,sc:[m.dt[1-i],m.dt[i]],a:pub(a),g:gc,nw})});save();lobby()}
 wss.on('connection',ws=>{ws.al=1;ws.on('pong',()=>ws.al=1);const p={ws,id:nid++,a:null,m:null,inv:null,t:0};P.set(p.id,p);
  ws.on('message',d=>{let m;try{m=JSON.parse(d)}catch{return}if(typeof m!=='object'||!m)return;
   if(m.t==='auth'||m.t==='acode'||m.t==='asel'){if(Date.now()-p.t<500)return;p.t=Date.now();
-   const fin=(a,r)=>{const o=[...P.values()].find(o=>o!==p&&o.a===a);if(o){o.a=null;try{o.ws.close()}catch{}}p.a=a;a.c=a.c??100;a.inv=a.inv||[0];a.eq=a.eq||0;let tk;if(r){tk=cr.randomBytes(24).toString('hex');a.tks=[...(a.tks||[]),hsh(tk)].slice(-5);save()}const ad=ADM.includes(a.n.toLowerCase());tx(p,{t:'ok',a:pub(a),adm:ad?1:0,tk});if(ad)tx(p,{t:'rql',l:REQ});lobby()};
+   const fin=(a,r)=>{const o=[...P.values()].find(o=>o!==p&&o.a===a);if(o){o.a=null;try{o.ws.close()}catch{}}if(a.n.toLowerCase()==='devinfection')a.n='DevINFECTION';p.a=a;a.c=a.c??100;a.inv=a.inv||[0];a.eq=a.eq||0;let tk;if(r){tk=cr.randomBytes(24).toString('hex');a.tks=[...(a.tks||[]),hsh(tk)].slice(-5);save()}const ad=ADM.includes(a.n.toLowerCase());tx(p,{t:'ok',a:pub(a),adm:ad?1:0,tk});if(ad)tx(p,{t:'rql',l:REQ});lobby()};
    if(m.t==='acode'){if(KEY&&m.k===KEY)tx(p,{t:'who'});else tx(p,{t:'err',m:'Zły kod admina'});return}
-   if(m.t==='asel'){const n=ADM.find(x=>x===String(m.n).toLowerCase());if(!KEY||m.k!==KEY||!n)return tx(p,{t:'err',m:'Zły kod admina'});let a=acc[n];if(!a){const s=cr.randomBytes(8).toString('hex');a=acc[n]={n:n==='devczorii'?'DevCzorii':'DevInfection',s,h:hs(cr.randomBytes(16).toString('hex'),s),w:0,l:0,k:0,d:0,xp:0,c:100,inv:[0],eq:0};save()}return fin(a,m.r)}
+   if(m.t==='asel'){const n=ADM.find(x=>x===String(m.n).toLowerCase());if(!KEY||m.k!==KEY||!n)return tx(p,{t:'err',m:'Zły kod admina'});let a=acc[n];if(!a){const s=cr.randomBytes(8).toString('hex');a=acc[n]={n:n==='devczorii'?'DevCzorii':'DevINFECTION',s,h:hs(cr.randomBytes(16).toString('hex'),s),w:0,l:0,k:0,d:0,xp:0,c:100,inv:[0],eq:0};save()}return fin(a,m.r)}
    const n=String(m.n||''),k=n.toLowerCase(),pw=String(m.p||'');
    if(m.m==='tok'){const a=acc[k];if(a&&a.tks&&a.tks.includes(hsh(String(m.tk))))return fin(a,0);return tx(p,{t:'err',m:'Sesja wygasła — zaloguj się ponownie',tok:1})}
    if(!/^[A-Za-z0-9_]{3,16}$/.test(n)||pw.length<4||pw.length>64)return tx(p,{t:'err',m:'Nazwa 3–16 znaków (litery, cyfry, _), hasło min. 4'});
@@ -34,7 +36,7 @@ wss.on('connection',ws=>{ws.al=1;ws.on('pong',()=>ws.al=1);const p={ws,id:nid++,
   else if(m.t==='give'&&false&&ADM.includes(p.a.n.toLowerCase())){const t=acc[String(m.n).toLowerCase()],v=Math.max(1,Math.min(1e6,m.v|0));if(!t)return tx(p,{t:'note',x:'Nie ma takiego gracza'});t.c=(t.c||0)+v;save();const q=REQ.findIndex(r=>r.n===t.n);if(q>=0)REQ.splice(q,1);const o=[...P.values()].find(o=>o.a===t);if(o)tx(o,{t:'acc',a:pub(t),x:'Admin '+p.a.n+' dał Ci '+v+' 🪙'});tx(p,{t:'note',x:'Dodano '+v+' 🪙 dla '+t.n});P.forEach(z=>z.a&&ADM.includes(z.a.n.toLowerCase())&&tx(z,{t:'rql',l:REQ}))}
   else if(m.t==='forget'){p.a.tks=(p.a.tks||[]).filter(h=>h!==hsh(String(m.tk)));save()}
   else if(m.t==='crate'&&false){p.a.c-=100;let r=Math.random()*100,s=1;const W=[47,28,15,8,2];for(let i=0;i<5;i++){if(r<W[i]){s=i+1;break}r-=W[i]}const dup=p.a.inv.includes(s);if(dup)p.a.c+=40;else p.a.inv.push(s);save();tx(p,{t:'crate',s,dup,a:pub(p.a)})}
-  else if(m.t==='eq'&&false&&p.a.inv.includes(m.s|0)){p.a.eq=m.s|0;save();tx(p,{t:'acc',a:pub(p.a)})}
+  else if(m.t==='eq'&&p.a.inv.includes(m.s|0)){p.a.eq=m.s|0;save();tx(p,{t:'acc',a:pub(p.a)})}
   else if(m0&&!m0.over){const i=p.i,j=1-i,o=m0.ps[j];
    if(m.t==='p'){m0.pos[i]=m.v;tx(o,{t:'p',v:m.v})}
    else if(m.t==='f'&&m0.hp[i]>0&&m0.hp[j]>=0&&!m0.dead[i]){const n=Date.now();if(n-m0.last[i]<340||m0.rl[i]||m0.am[i]<=0)return;m0.last[i]=n;m0.am[i]--;tx(o,{t:'f',o:m.o,d:m.d,e:m.e});
