@@ -8,7 +8,7 @@ const REQ=[],hsh=s=>cr.createHash('sha256').update(s).digest('hex');
 const ACH=[['first',a=>a.k>=1,1],['w1',a=>a.w>=1,2],['w5',a=>a.w>=5,3],['flaw',a=>a.fl,4],['w25',a=>a.w>=25,5],['k50',a=>a.k>=50,0]];
 function ach(a){a.ach=a.ach||[];a.inv=a.inv||[0];const nw=[];ACH.forEach(([id,f,s])=>{if(!a.ach.includes(id)&&f(a)){a.ach.push(id);nw.push(id);if(s){if(!a.inv.includes(s))a.inv.push(s)}else a.xp+=100}});return nw}
 const pub=a=>({n:a.n,w:a.w,l:a.l,k:a.k,d:a.d,xp:a.xp,c:a.c,inv:a.inv,eq:a.eq,ach:a.ach||[]});
-const srv=http.createServer((q,r)=>{const u=q.url.split('?')[0].slice(1),f=u==='deagle.glb'||u==='soldier.glb'?[u,'model/gltf-binary']:['index.html','text/html; charset=utf-8'];fs.readFile(__dirname+'/'+f[0],(e,d)=>{if(e)return r.end('TENHP ok');r.writeHead(200,{'Content-Type':f[1]});r.end(d)})}),wss=new WebSocketServer({server:srv});
+const srv=http.createServer((q,r)=>{const u=q.url.split('?')[0].slice(1),f=/^[\w.-]+\.glb$/.test(u)?[u,'model/gltf-binary']:['index.html','text/html; charset=utf-8'];fs.readFile(__dirname+'/'+f[0],(e,d)=>{if(e)return r.end('TENHP ok');r.writeHead(200,{'Content-Type':f[1]});r.end(d)})}),wss=new WebSocketServer({server:srv});
 const P=new Map();let nid=1;
 const tx=(p,o)=>{if(p.ws.readyState===1)p.ws.send(JSON.stringify(o))};
 const lobby=()=>{const l=[...P.values()].filter(p=>p.a).map(p=>({id:p.id,n:p.a.n,lv:Math.floor(p.a.xp/100)+1,adm:ADM.includes(p.a.n.toLowerCase())?1:0,st:p.m?'game':'lobby'}));P.forEach(p=>p.a&&tx(p,{t:'lob',l}))};
@@ -28,7 +28,7 @@ wss.on('connection',ws=>{ws.al=1;ws.on('pong',()=>ws.al=1);const p={ws,id:nid++,
    if(m.m==='reg'){if(acc[k])return tx(p,{t:'err',m:'Nazwa zajęta'});if(ADM.includes(k)&&(!KEY||m.k!==KEY))return tx(p,{t:'err',m:'Ta nazwa wymaga klucza admina',key:1});const s=cr.randomBytes(8).toString('hex');acc[k]={n,s,h:hs(pw,s),w:0,l:0,k:0,d:0,xp:0,c:100,inv:[0],eq:0};save()}
    const a=acc[k];if(!a||a.h!==hs(pw,a.s))return tx(p,{t:'err',m:'Zła nazwa lub hasło'});return fin(a,m.r)}
   if(!p.a)return;const m0=p.m;
-  if(m.t==='inv'){const o=P.get(m.to);if(o&&o!==p&&o.a&&!o.m&&!p.m){o.inv={from:p.id,ar:(m.ar>=0&&m.ar<6?m.ar|0:0)};tx(o,{t:'inv',fid:p.id,from:p.a.n,ar:(m.ar>=0&&m.ar<6?m.ar|0:0)})}}
+  if(m.t==='inv'){const o=P.get(m.to);if(o&&o!==p&&o.a&&!o.m&&!p.m){o.inv={from:p.id,ar:(m.ar>=0&&m.ar<8?m.ar|0:0)};tx(o,{t:'inv',fid:p.id,from:p.a.n,ar:(m.ar>=0&&m.ar<8?m.ar|0:0)})}}
   else if(m.t==='acc'){const o=P.get(m.to);if(o&&!o.m&&!p.m&&p.inv&&p.inv.from===o.id)start(o,p,p.inv.ar)}
   else if(m.t==='dec'){const o=P.get(m.to);if(o)tx(o,{t:'dec'});p.inv=null}
   else if(m.t==='ann'&&ADM.includes(p.a.n.toLowerCase()))P.forEach(o=>tx(o,{t:'ann',from:p.a.n,x:String(m.x).slice(0,80)}));
