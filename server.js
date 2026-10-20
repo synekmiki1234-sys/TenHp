@@ -9,7 +9,7 @@ const rg=(a,b)=>Array.from({length:b-a},(_,i)=>a+i),TI=[rg(1,14),rg(14,26),rg(26
 const ACH=[['first',a=>a.k>=1,1],['w1',a=>a.w>=1,2],['w5',a=>a.w>=5,14],['flaw',a=>a.fl,26],['w25',a=>a.w>=25,36],['k50',a=>a.k>=50,0]];
 function ach(a){a.ach=a.ach||[];a.inv=a.inv||[0];const nw=[];ACH.forEach(([id,f,s])=>{if(!a.ach.includes(id)&&f(a)){a.ach.push(id);nw.push(id);if(s){if(!a.inv.includes(s))a.inv.push(s)}else a.xp+=100}});return nw}
 const pub=a=>({n:a.n,w:a.w,l:a.l,k:a.k,d:a.d,xp:a.xp,c:a.c,inv:a.inv,eq:a.eq,ach:a.ach||[]});
-const srv=http.createServer((q,r)=>{const u=q.url.split('?')[0].slice(1),f=/^[\w.-]+\.glb$/.test(u)?[u,'model/gltf-binary']:['index.html','text/html; charset=utf-8'];fs.readFile(__dirname+'/'+f[0],(e,d)=>{if(e)return r.end('TENHP ok');r.writeHead(200,{'Content-Type':f[1]});r.end(d)})}),wss=new WebSocketServer({server:srv});
+const srv=http.createServer((q,r)=>{const u=q.url.split('?')[0].slice(1),f=/^[\w.-]+\.(glb|vox)$/.test(u)?[u,u.endsWith('.glb')?'model/gltf-binary':'application/octet-stream']:['index.html','text/html; charset=utf-8'];fs.readFile(__dirname+'/'+f[0],(e,d)=>{if(e)return r.end('TENHP ok');r.writeHead(200,{'Content-Type':f[1]});r.end(d)})}),wss=new WebSocketServer({server:srv});
 const P=new Map();let nid=1;
 const tx=(p,o)=>{if(p.ws.readyState===1)p.ws.send(JSON.stringify(o))};
 const lobby=()=>{const l=[...P.values()].filter(p=>p.a).map(p=>({id:p.id,n:p.a.n,lv:Math.floor(p.a.xp/100)+1,adm:ADM.includes(p.a.n.toLowerCase())?1:0,st:p.m?'game':'lobby'}));P.forEach(p=>p.a&&tx(p,{t:'lob',l}))};
