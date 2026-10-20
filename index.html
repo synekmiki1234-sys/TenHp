@@ -221,7 +221,7 @@ $('#lb').onclick=()=>scr('menu');
 function renderLobby(){const L=$('#plist');L.innerHTML='';const ps=lobL.filter(p=>p.n!==me.n);
  if(!ps.length){const d=$d.createElement('div');d.className='sub';d.textContent='Brak innych graczy online';L.append(d)}
  ps.forEach(p=>{const r=$d.createElement('div');r.className='pl';const s=$d.createElement('span');s.textContent=p.n+' · lvl '+p.lv;if(p.adm){const b=$d.createElement('b');b.className='badge';b.textContent='ADMIN';s.append(b)}
-  const b=$d.createElement('button');b.className='p';b.textContent=p.st==='game'?'W grze':'Zaproś';b.disabled=p.st==='game'||pend;b.onclick=()=>{pend=1;send({t:'inv',to:p.id,ar:sel});$('#le').textContent='Wysłano zaproszenie do '+p.n;setTimeout(()=>{pend=0;renderLobby()},15000);renderLobby()};r.append(s,b);L.append(r)})}
+  const b=$d.createElement('button');b.className='p';b.textContent=p.st==='game'?'W grze':'Zaproś';b.disabled=p.st==='game'||pend;b.onclick=()=>{pend=1;send({t:'inv',to:p.id,ar:sel});$('#le').textContent='Wysłano zaproszenie do '+p.n;setTimeout(()=>{pend=0;renderLobby()},15000);renderLobby()};if(adm){const gb=$d.createElement('button');gb.textContent='🪙';gb.title='Dodaj monety';gb.style.flex='0 0 auto';gb.onclick=()=>{const v=parseInt(prompt('Ile monet dla '+p.n+'?','100'));if(v>0)send({t:'give',n:p.n,v})};r.append(s,gb,b)}else r.append(s,b);L.append(r)})}
 $('#ann').onclick=()=>{const x=prompt('Treść ogłoszenia:');if(x)send({t:'ann',x})};
 $('#ia').onclick=()=>{$('#inv').classList.remove('on');if(invD)send({t:'acc',to:invD.fid});invD=null};$('#id').onclick=()=>{$('#inv').classList.remove('on');if(invD)send({t:'dec',to:invD.fid});invD=null};
 const iaO=$('#ia').onclick,idO=$('#id').onclick;
@@ -242,9 +242,9 @@ function floorAt(x,z,y){RCY.set(V3(x,y+.8,z),V3(0,-1,0));RCY.far=5;const hs=RCY.
 function gnd(x,z,y){if(!GM)return 0;const h=floorAt(x,z,y);return h===null?y:h}
 function rcast(o,d,mx){RCY.set(o,d);RCY.far=mx;const h=RCY.intersectObject(GM.root,true)[0];return h?h.distance:null}
 function vx(i,k,l){const g=GM;if(i<0||k<0||l<0||i>=g.vw||k>=g.vh||l>=g.vd)return 0;const n=(l*g.vh+k)*g.vw+i;return(g.bits[n>>3]>>(7-(n&7)))&1}
-function hitG(x,z,y){const g=GM,r=.28,c=g.vcs,i0=Math.floor((x-r-g.vx0)/c),i1=Math.floor((x+r-g.vx0)/c),k0=Math.floor((z-r-g.vz0)/c),k1=Math.floor((z+r-g.vz0)/c),l0=Math.floor((y+.4-g.vy0)/c),l1=Math.floor((y+1.6-g.vy0)/c);
+function hitG(x,z,y){const g=GM,r=.28,c=g.vcs,i0=Math.floor((x-r-g.vx0)/c),i1=Math.floor((x+r-g.vx0)/c),k0=Math.floor((z-r-g.vz0)/c),k1=Math.floor((z+r-g.vz0)/c),l0=Math.floor((y+.75-g.vy0)/c),l1=Math.floor((y+1.6-g.vy0)/c);
  for(let l=l0;l<=l1;l++)for(let k=k0;k<=k1;k++)for(let i=i0;i<=i1;i++)if(vx(i,k,l))return 1;
- const f=floorAt(x,z,y);if(f===null||f>y+.6)return 1;if(g.fmax!=null&&(f>g.fmax||f<g.fmin))return 1;return 0}
+ const f=floorAt(x,z,y);if(f===null||f>y+.75)return 1;if(g.fmax!=null&&(f>g.fmax||f<g.fmin))return 1;return 0}
 function spawnY(x,z){if(!GM)return 0;RCY.set(V3(x,60,z),V3(0,-1,0));RCY.far=120;const hs=RCY.intersectObject(GM.root,true).filter(h=>h.face&&h.face.normal.clone().transformDirection(h.object.matrixWorld).y>.3).sort((a,b)=>Math.abs(a.point.y)-Math.abs(b.point.y));
  for(const h of hs){RCY.set(V3(x,h.point.y+.1,z),V3(0,1,0));RCY.far=1.8;if(!RCY.intersectObject(GM.root,true).length)return h.point.y}return 0}
 function loadMap(a,cb){const b=$('#bn');b.textContent='Ładowanie mapy…';b.style.color='#fff';b.classList.remove('s');b.style.opacity=1;const fail=()=>{b.textContent='Nie można wczytać mapy — sprawdź, czy pliki map są na serwerze'};
@@ -280,11 +280,11 @@ function loop(){if(!inGame)return;requestAnimationFrame(loop);const n=performanc
 function upd(dt){if(BOT)botUpd(dt);cd-=dt;rec=Math.max(0,rec-dt*.04);shake*=.88;if(rlT>0)rlT-=dt;
  if(!P.dead){let ix=(K.d||K.ArrowRight?1:0)-(K.a||K.ArrowLeft?1:0)+T.mx,iz=(K.s||K.ArrowDown?1:0)-(K.w||K.ArrowUp?1:0)+T.my,l=Math.hypot(ix,iz);if(l>1){ix/=l;iz/=l}
   P.ads=!!(M.r||T.ads);P.c=!!(K.c||T.crouch);P.sp=!!((K.Shift||T.sprint)&&l>.1&&!P.ads&&!P.c);let sp=P.sp?6.2:3.4;if(P.c)sp=1.7;if(P.ads)sp=2.1;
-  const G=gnd(P.x,P.z,P.y);P.G=G;const gr=P.y<=G+.001,c=Math.cos(yaw),s=Math.sin(yaw),wx=ix*c+iz*s,wz=-ix*s+iz*c,k=Math.min(1,dt*(gr?(l>.05?7:11):2.5));P.vx+=(wx*sp-P.vx)*k;P.vz+=(wz*sp-P.vz)*k;
+  const G=gnd(P.x,P.z,P.y);P.G=G;if(P.gd&&P.vy<=0&&P.y>G&&P.y-G<=.9)P.y=G;const gr=P.y<=G+.001,c=Math.cos(yaw),s=Math.sin(yaw),wx=ix*c+iz*s,wz=-ix*s+iz*c,k=Math.min(1,dt*(gr?(l>.05?7:11):2.5));P.vx+=(wx*sp-P.vx)*k;P.vz+=(wz*sp-P.vz)*k;
   const nx=P.x+P.vx*dt,nz=P.z+P.vz*dt;if(!hitW(nx,P.z,P.y))P.x=nx;else P.vx=0;if(!hitW(P.x,nz,P.y))P.z=nz;else P.vz=0;
   const jh=!!(K[' ']||T.jump);if(jh&&!P.jh)P.jb=.14;P.jh=jh;P.jb-=dt;P.cy=gr?.1:P.cy-dt;
   if(P.jb>0&&P.cy>0&&!P.c){P.vy=10;P.jb=0;P.cy=0;SFX.jump()}if(!jh&&P.vy>0)P.vy-=45*dt;
-  const was=P.y>G+.001;P.vy-=25*dt;P.y+=P.vy*dt;if(P.y<G){P.y=G;if(was&&P.vy<-3){SFX.land();shake=Math.max(shake,.15)}P.vy=0}
+  const was=P.y>G+.001;P.vy-=25*dt;P.y+=P.vy*dt;if(P.y<G){P.y=G;if(was&&P.vy<-3){SFX.land();shake=Math.max(shake,.15)}P.vy=0}P.gd=P.y<=G+.001;
   const fh=!!(M.l||T.fire);if(fh&&!P.fh)shoot();P.fh=fh;if(K.r&&S.am<7&&rlT<=0){send({t:'rl'});rlT=1.6;SFX.rl()}
   P.spd=Math.hypot(P.vx,P.vz);if(P.spd>.4||P.ads||M.l||T.fire){const h=(P.ads||M.l||T.fire)?yaw:Math.atan2(-P.vx,-P.vz);let d=h-Pm.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));Pm.rotation.y+=d*Math.min(1,dt*14)}}
  sendT+=dt;if(sendT>.05){sendT=0;send({t:'p',v:{x:+P.x.toFixed(2),y:+P.y.toFixed(2),z:+P.z.toFixed(2),r:+Pm.rotation.y.toFixed(2),c:P.c?1:0,d:P.dead?1:0,s:+P.spd.toFixed(1),a:P.ak>.5?1:0,g:P.y>(P.G||0)+.05?1:0,vy:+P.vy.toFixed(1)}})}
@@ -336,7 +336,7 @@ function botUpd(dt){const B=BOT;if(!B||ended)return;
  const fw=dist>B.D.rng+3?1:dist<B.D.rng-3?-1:0,mx=dx/dist*fw-dz/dist*B.dir*.9,mz=dz/dist*fw+dx/dist*B.dir*.9,l=Math.hypot(mx,mz)||1,sp=B.cr?1.7:B.D.sp,k=Math.min(1,dt*6);
  B.vx+=(mx/l*sp-B.vx)*k;B.vz+=(mz/l*sp-B.vz)*k;const nx=B.x+B.vx*dt,nz=B.z+B.vz*dt;
  if(!hitW(nx,B.z,B.y))B.x=nx;else{B.vx=0;B.dir*=-1}if(!hitW(B.x,nz,B.y))B.z=nz;else{B.vz=0;B.dir*=-1}
- const BG=gnd(B.x,B.z,B.y);B.G=BG;B.vy-=25*dt;B.y+=B.vy*dt;if(B.y<BG){B.y=BG;B.vy=0}
+ const BG=gnd(B.x,B.z,B.y);B.G=BG;if(B.gd&&B.vy<=0&&B.y>BG&&B.y-BG<=.9)B.y=BG;B.vy-=25*dt;B.y+=B.vy*dt;if(B.y<BG){B.y=BG;B.vy=0}B.gd=B.y<=BG+.001;
  B.cd-=dt;if(B.rl>0){B.rl-=dt;if(B.rl<=0)B.am=7}
  const head=new THREE.Vector3(B.x,B.y+1.5,B.z),tg=new THREE.Vector3(P.x,P.y+1.2,P.z),dv=tg.clone().sub(head),L=dv.length();dv.normalize();let clear=1;if(GM){const h=rcast(head,dv,L);if(h!==null&&h<L-.3)clear=0}else for(const p of PL)if(rayBox(head,dv,p)<L){clear=0;break}
  if(!clear||P.dead)B.rx=B.D.rt;else{B.rx-=dt;if(B.rx<=0&&B.cd<=0&&B.rl<=0&&dist<45){
